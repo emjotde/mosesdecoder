@@ -1,9 +1,33 @@
 import numpy
 import cPickle
 import sys
+import time
 
 from encdec import parse_input, RNNEncoderDecoder
 from state import prototype_state
+from collections import defaultdict
+
+
+class Timer(object):
+    def __init__(self):
+        self.parts = defaultdict(list)
+        self.starts = defaultdict(int)
+
+    def start(self, name):
+        if self.starts[name] == 0:
+            self.starts[name] = time.time()
+
+    def finish(self, name):
+        if self.starts[name] != 0:
+            p = time.time() - self.starts[name]
+            self.parts[name].append(p)
+            self.starts[name] = 0
+        else:
+            pass
+
+    def print_stats(self):
+        for kk, vv in self.parts.iteritems():
+            print "{}: {}".format(kk, sum(vv))
 
 
 class NMTWrapper(object):
@@ -14,6 +38,7 @@ class NMTWrapper(object):
         self.model_path = model_path
         self.source_vocab_path = source_vocab_path
         self.target_vocab_path = target_vocab_path
+        self.timer = Timer()
 
     def build(self):
 
@@ -133,6 +158,8 @@ class NMTWrapper(object):
         return numpy.split(self.comp_next_states(c, 0, next_indxs, *states)[0])
 
     def get_log_prob_states(self, next_words, c, last_words=[], states=[]):
+        self.timer.start('get_log_prob_states')
+
         if len(last_words) == 0:
             phrase_num = 1
         else:
@@ -156,12 +183,20 @@ class NMTWrapper(object):
 
         next_indxs = [self.target_vocab.get(next_word, self.unk_id)
                       for next_word in next_words]
-        log_probs = numpy.log(self.comp_next_probs(c, 0, last_words.astype("int64"),
-                                                   *states)[0])
+        self.timer.start('get_log_prob_states_probs')
+        probs = self.comp_next_probs(c, 0, last_words.astype("int64"),
+                                     *states)[0]
+        self.timer.finish('get_log_prob_states_probs')
+        self.timer.start('get_log_prob_states_states')
+        log_probs = numpy.log(probs)
         cumulated_score = [log_probs[i][next_indxs[i]]
                            for i in range(phrase_num)]
 
+        self.timer.start('get_log_prob_states_states')
         new_states = numpy.split(self.comp_next_states(c, 0, next_indxs, *states)[0], phrase_num)
+        self.timer.finish('get_log_prob_states_states')
+        self.timer.finish('get_log_prob_states')
+        self.timer.print_stats()
 
         return cumulated_score, new_states, self.get_unk(next_words)
 
