@@ -27,7 +27,11 @@ class Timer(object):
 
     def print_stats(self):
         for kk, vv in self.parts.iteritems():
-            print "{}: {}".format(kk, sum(vv))
+            print >> sys.stderr, "{}: {}".format(kk, sum(vv))
+            sys.stderr.flush()
+
+    def __del__(self):
+        self.print_stats()
 
 
 class NMTWrapper(object):
@@ -193,10 +197,10 @@ class NMTWrapper(object):
                            for i in range(phrase_num)]
 
         self.timer.start('get_log_prob_states_states')
-        new_states = numpy.split(self.comp_next_states(c, 0, next_indxs, *states)[0], phrase_num)
+        new_states = self.comp_next_states(c, 0, next_indxs, *states)[0]
         self.timer.finish('get_log_prob_states_states')
+        new_states = numpy.split(new_states, phrase_num)
         self.timer.finish('get_log_prob_states')
-        self.timer.print_stats()
 
         return cumulated_score, new_states, self.get_unk(next_words)
 
