@@ -8,6 +8,9 @@ RESCORER_HEADERS = rescorer/nbest.h
 SOURCES = test/test.cpp cnpy/cnpy.cpp
 HEADERS = common/decoder.h common/encoder.h common/model.h common/states.h common/npz_converter.h common/vocab.h mblas/matrix.h mblas/base_matrix.h
 
+DECODERCU = decoder/decoder_main.cu common/utils.cu cnpy/cnpy.cpp
+DECODER_HEADERS = decoder/nmt_decoder.h
+
 test_cuda: $(SOURCESCU) $(HEADERS)
 	nvcc --use_fast_math -O3 -Icommon -I. -std=c++11 $(SOURCESCU) -arch=sm_35 -lineinfo -lboost_system -lboost_timer -lcudart -lcublas -o $@
 
@@ -17,6 +20,8 @@ test_cuda: $(SOURCESCU) $(HEADERS)
 rescorer_cuda: $(RESCORERCU) $(HEADERS) $(RESCORER_HEADERS)
 	nvcc --use_fast_math -O3 -std=c++11 $(RESCORERCU) -Icommon -I. -lboost_system -lboost_timer -lboost_program_options -lcudart -lcublas -o $@
 
+decoder_cuda: $(DECODERCU) $(HEADERS) $(DECODER_HEADERS)
+	nvcc --use_fast_math -O3 -std=c++11 $(DECODERCU) -Icommon -I. -lboost_system -lboost_timer -lboost_program_options -lcudart -lcublas -o $@
 clean:
 	rm -rf test_cuda test_gsl test_atlas test_ptatlas libnmt-cuda.so rescorer *.o *.so
 
