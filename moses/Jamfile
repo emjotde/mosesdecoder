@@ -56,6 +56,7 @@ update-if-changed $(LM-LOG) $(current) ;
 obj FF_Factory.o : FF/Factory.cpp LM//macros headers ../lm//kenlm mmlib :
 <include>$(TOP)/moses/FF/NMT
 <include>$(TOP)/moses/FF/NMT/common
+<include>/home/tomaszd/codes/amunmt_plugin/src
 <dependency>$(LM-LOG) ;
 
 # check if we have xmlrpc-c's abyss server available
@@ -112,10 +113,6 @@ lib moses :
   FF/*.cpp
   FF/bilingual-lm/*.cpp
   FF/OSM-Feature/*.cpp
-  FF/NMT/plugin/nmt.cu
-  FF/NMT/plugin/nbest.cu
-  FF/NMT/common/utils.cu
-  FF/NMT/cnpy/cnpy.cpp
   FF/Dsg-Feature/*.cpp
   FF/LexicalReordering/*.cpp
   PP/*.cpp
@@ -140,6 +137,8 @@ $(TOP)//boost_iostreams
 :
 <include>$(TOP)/moses/FF/NMT
 <include>$(TOP)/moses/FF/NMT/common
+<include>/home/tomaszd/codes/amunmt_plugin/src
+<include>/home/tomaszd/codes/amunmt_plugin/src/3rd_party
 <threading>single:<source>../util//rt
 ;
 
