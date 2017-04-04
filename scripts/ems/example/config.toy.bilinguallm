@@ -54,7 +54,7 @@ output-tokenizer = "$moses-script-dir/tokenizer/tokenizer.perl -a -l $output-ext
 # For Arabic tokenizer try Farasa (download: http://qatsdemo.cloudapp.net/farasa/)
 #  Abdelali, Darwish, Durrani, Mubarak (NAACL demo 2016)
 #  "Farasa: A Fast and Furious Segmenter for Arabic"
-input-tokenizer = "$farasa-dir/farasa_moses.sh"
+#input-tokenizer = "$farasa-dir/farasa_moses.sh"
 
 # truecasers - comment out if you do not use the truecaser
 input-truecaser = $moses-script-dir/recaser/truecase.perl
@@ -394,7 +394,7 @@ alignment-symmetrization-method = grow-diag-final-and
 # 
 #operation-sequence-model = "yes"
 #operation-sequence-model-order = 5
-#operation-sequence-model-settings = "-lmplz '$moses-src-dir/bin/lmplz -S 40% -T $working-dir/model/tmp'"
+#operation-sequence-model-settings = "-lmplz '$moses-src-dir/bin/lmplz -S 40%'"
 #
 # OR if you want to use with SRILM
 #

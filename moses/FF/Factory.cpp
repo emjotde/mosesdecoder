@@ -14,8 +14,9 @@
 #include "moses/TranslationModel/RuleTable/PhraseDictionaryOnDisk.h"
 #include "moses/TranslationModel/RuleTable/PhraseDictionaryFuzzyMatch.h"
 #include "moses/TranslationModel/RuleTable/PhraseDictionaryALSuffixArray.h"
-#include "moses/TranslationModel/ProbingPT/ProbingPT.h"
+#include "moses/TranslationModel/ProbingPT.h"
 #include "moses/TranslationModel/PhraseDictionaryMemoryPerSentence.h"
+#include "moses/TranslationModel/PhraseDictionaryMemoryPerSentenceOnDemand.h"
 
 #include "moses/FF/LexicalReordering/LexicalReordering.h"
 
@@ -30,6 +31,7 @@
 #include "moses/FF/TargetBigramFeature.h"
 #include "moses/FF/TargetNgramFeature.h"
 #include "moses/FF/PhraseBoundaryFeature.h"
+#include "moses/FF/PhraseDistanceFeature.h"
 #include "moses/FF/PhrasePairFeature.h"
 #include "moses/FF/RulePairUnlexicalizedSource.h"
 #include "moses/FF/PhraseLengthFeature.h"
@@ -66,14 +68,21 @@
 #include "moses/FF/SkeletonStatelessFF.h"
 #include "moses/FF/SkeletonStatefulFF.h"
 #include "moses/LM/SkeletonLM.h"
+#include "moses/LM/InMemoryPerSentenceOnDemandLM.h"
 #include "moses/FF/SkeletonTranslationOptionListFeature.h"
 #include "moses/LM/BilingualLM.h"
 #include "moses/TranslationModel/SkeletonPT.h"
 #include "moses/Syntax/InputWeightFF.h"
 #include "moses/Syntax/RuleTableFF.h"
 
+#include "moses/FF/EditOps.h"
+#include "moses/FF/CorrectionPattern.h"
+
 #ifdef HAVE_VW
 #include "moses/FF/VW/VW.h"
+#include "moses/FF/VW/VWFeatureContextBigrams.h"
+#include "moses/FF/VW/VWFeatureContextBilingual.h"
+#include "moses/FF/VW/VWFeatureContextWindow.h"
 #include "moses/FF/VW/VWFeatureSourceBagOfWords.h"
 #include "moses/FF/VW/VWFeatureSourceBigrams.h"
 #include "moses/FF/VW/VWFeatureSourceIndicator.h"
@@ -240,6 +249,7 @@ FeatureRegistry::FeatureRegistry()
   MOSES_FNAME(PhraseDictionaryFuzzyMatch);
   MOSES_FNAME(ProbingPT);
   MOSES_FNAME(PhraseDictionaryMemoryPerSentence);
+  MOSES_FNAME(PhraseDictionaryMemoryPerSentenceOnDemand);
   MOSES_FNAME2("RuleTable", Syntax::RuleTableFF);
   MOSES_FNAME2("SyntaxInputWeight", Syntax::InputWeightFF);
 
@@ -249,6 +259,7 @@ FeatureRegistry::FeatureRegistry()
   MOSES_FNAME(SourceWordDeletionFeature);
   MOSES_FNAME(TargetWordInsertionFeature);
   MOSES_FNAME(PhraseBoundaryFeature);
+  MOSES_FNAME(PhraseDistanceFeature);
   MOSES_FNAME(PhraseLengthFeature);
   MOSES_FNAME(WordTranslationFeature);
   MOSES_FNAME(TargetBigramFeature);
@@ -292,11 +303,18 @@ FeatureRegistry::FeatureRegistry()
   MOSES_FNAME(SkeletonStatelessFF);
   MOSES_FNAME(SkeletonStatefulFF);
   MOSES_FNAME(SkeletonLM);
+  MOSES_FNAME(InMemoryPerSentenceOnDemandLM);
   MOSES_FNAME(SkeletonTranslationOptionListFeature);
   MOSES_FNAME(SkeletonPT);
 
+  MOSES_FNAME(EditOps);
+  MOSES_FNAME(CorrectionPattern);
+
 #ifdef HAVE_VW
   MOSES_FNAME(VW);
+  MOSES_FNAME(VWFeatureContextBigrams);
+  MOSES_FNAME(VWFeatureContextBilingual);
+  MOSES_FNAME(VWFeatureContextWindow);
   MOSES_FNAME(VWFeatureSourceBagOfWords);
   MOSES_FNAME(VWFeatureSourceBigrams);
   MOSES_FNAME(VWFeatureSourceIndicator);

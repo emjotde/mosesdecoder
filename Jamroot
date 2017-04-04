@@ -119,7 +119,7 @@ requirements += <library>cuda <library>cudart <library>cublas <library-path>/usr
     
 #lib dl : : <runtime-link>static:<link>static <runtime-link>shared:<link>shared ;
 #requirements += <library>dl ;
-#requirements += <cxxflags>-std=c++0x ;
+requirements += <cxxflags>-std=c++0x ;
 
 # Allow moses to report the git commit hash of the version used for compilation
 moses_githash = [ _shell "git describe --dirty" ] ;
@@ -191,7 +191,6 @@ requirements += [ option.get "with-mm" : : <define>MAX_NUM_FACTORS=4 ] ;
 requirements += [ option.get "unlabelled-source" : : <define>UNLABELLED_SOURCE ] ;
 
 if [ option.get "with-oxlm" ] {
-  external-lib boost_serialization ;
   external-lib gomp ;
   requirements += <library>boost_serialization ;
   requirements += <library>gomp ;
@@ -324,6 +323,9 @@ rephraser
 contrib/c++tokenizer//tokenizer
 contrib/expected-bleu-training//train-expected-bleu
 contrib/expected-bleu-training//prepare-expected-bleu-training
+
+probingpt//programs
+moses2//programs
 ;
 
 
@@ -347,3 +349,5 @@ if [ path.exists $(TOP)/dist ] && $(prefix) != dist {
 local temp = [ _shell "mkdir -p $(TOP)/bin" ] ;
 local temp = [ _shell "rm -f $(TOP)/bin/moses_chart" ] ;
 local temp = [ _shell "cd $(TOP)/bin && ln -s moses moses_chart" ] ;
+local temp = [ _shell "cd $(TOP)/bin && ln -s CreateProbingPT CreateProbingPT2" ] ;
+
