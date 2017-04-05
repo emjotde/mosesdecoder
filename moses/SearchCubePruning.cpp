@@ -236,7 +236,6 @@ void SearchCubePruning::ProcessStackForNeuro(HypothesisStackCubePruning*& stack)
   std::vector<Hypothesis*> temp;
   for (h = stack->begin(); h != stack->end(); ++h) {
     temp.push_back(*h);
-    //stack->Detach(h);
   }
   
   const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
@@ -246,9 +245,6 @@ void SearchCubePruning::ProcessStackForNeuro(HypothesisStackCubePruning*& stack)
     if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i]))
       const_cast<NeuralScoreFeature*>(nsf)->RescoreStack(temp, i);
   }
-  
-  //for(int i = 0; i < temp.size(); i++)
-  //  stack->AddPrune(temp[i]);
 }
 
 

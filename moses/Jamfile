@@ -57,6 +57,7 @@ obj FF_Factory.o : FF/Factory.cpp LM//macros headers ../lm//kenlm mmlib :
 <include>$(TOP)/moses/FF/NMT
 <include>$(TOP)/moses/FF/NMT/common
 <include>/home/tomaszd/codes/amunmt_plugin/src
+<include>/home/tomaszd/codes/amunmt_plugin/src/3rd_party
 <dependency>$(LM-LOG) ;
 
 # check if we have xmlrpc-c's abyss server available
@@ -126,7 +127,7 @@ vwfiles synlm mmlib mserver headers
 FF_Factory.o 
 LM//LM 
 TranslationModel/CompactPT//CompactPT
-TranslationModel/ProbingPT//ProbingPT 
+# TranslationModel/ProbingPT//ProbingPT 
 ThreadPool
 ..//search 
 ../util/double-conversion//double-conversion 
@@ -136,8 +137,8 @@ ThreadPool
 $(TOP)//boost_filesystem 
 $(TOP)//boost_iostreams 
 :
-<include>$(TOP)/moses/FF/NMT
-<include>$(TOP)/moses/FF/NMT/common
+# <include>$(TOP)/moses/FF/NMT
+# <include>$(TOP)/moses/FF/NMT/common
 <include>/home/tomaszd/codes/amunmt_plugin/src
 <include>/home/tomaszd/codes/amunmt_plugin/src/3rd_party
 <threading>single:<source>../util//rt

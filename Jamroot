@@ -114,9 +114,14 @@ import nvcc ;
 external-lib cuda ;
 external-lib cudart ;
 external-lib cublas ;
+external-lib mosesplugin ;
+external-lib boost_timer ;
+external-lib boost_chrono ;
 requirements += <library>cuda <library>cudart <library>cublas <library-path>/usr/local/cuda/lib64 ;
+requirements += <library>mosesplugin <link>static <library-path>./moses/FF/NMT/amunmt/build/src ;
+requirements += <library>boost_timer <library>boost_chrono ;
 
-    
+
 #lib dl : : <runtime-link>static:<link>static <runtime-link>shared:<link>shared ;
 #requirements += <library>dl ;
 requirements += <cxxflags>-std=c++0x ;

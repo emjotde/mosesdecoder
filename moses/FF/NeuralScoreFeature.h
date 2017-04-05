@@ -12,24 +12,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/tss.hpp>
 
-
 #include "common/scorer.h"
-// struct Payload {
-  // Payload() : logProb_(0), known_(true) {}
-  // Payload(States& state, float logProb) : state_(state), logProb_(logProb) {}
 
-  // States state_;
-  // float logProb_;
-  // bool known_;
-// };
-
-// typedef std::map<size_t, Payload> Payloads;
 typedef std::vector<std::string> Prefix;
-// typedef std::map<Prefix, Payloads> Prefixes;
-// typedef std::vector<Prefixes> PrefsByLength;
-
-// typedef std::pair<const Prefix, Payloads> PP;
-// typedef std::pair<const size_t, Payload> SP;
 
 namespace amunmt {
 
@@ -53,13 +38,6 @@ class NeuralScoreFeature : public StatefulFeatureFunction {
   void RescoreStack(std::vector<Hypothesis*>& hyps, size_t index);
   void RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_t index);
   void ProcessStack(Collector& collector, size_t index);
-
-  // void BatchProcess(
-      // const std::vector<std::string>& nextWords,
-      // std::vector<States>& inputStates,
-      // std::vector<double>& logProbs,
-      // std::vector<States>& nextStates,
-      // std::vector<bool>& unks);
 
   virtual const FFState* EmptyHypothesisState(const InputType &input) const;
 
