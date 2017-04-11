@@ -116,9 +116,9 @@ NeuralScoreFeature::NeuralScoreFeature(const std::string &line)
 
   std::cerr << "Total amuNMT threads/scorers: " << totalThreads << std::endl;
 
-  for (size_t i = 0; i < totalThreads; ++i) {
-    m_scorers.push_back(amunmt::NMT::NewScorers());
-  }
+  // for (size_t i = 0; i < totalThreads; ++i) {
+    // m_scorers.push_back(amunmt::NMT::NewScorers());
+  // }
 
   std::cerr << "amuNMT loaded." << std::endl;
 }
@@ -130,16 +130,9 @@ void NeuralScoreFeature::InitializeForInput(ttasksptr const& ttask)
     boost::mutex::scoped_lock lock(m_mutex);
     std::cerr << "NMT pointer is empty: creating nmt object" << std::endl;
     size_t scorerId = m_threadId++ % m_scorers.size();
-    m_nmt.reset(new amunmt::NMT(m_scorers[scorerId]));
-    m_targetWords.reset(new std::set<std::string>());
-    m_nmt->SetDevice();
+    m_nmt.reset(new amunmt::NMT());
   } else {
-    std::cerr << "NMT pointer reseted: creating nmt object" << std::endl;
-    m_nmt.reset(new amunmt::NMT(m_nmt->GetScorers()));
-    m_nmt->SetDevice();
   }
-  m_nmt->ClearStates();
-  m_targetWords->clear();
 }
 
 
@@ -159,8 +152,8 @@ const FFState* NeuralScoreFeature::EmptyHypothesisState(const InputType &input) 
     sourceSentence.push_back(sentence.GetWord(i).GetString(0).as_string());
   }
 
-  std::cerr << "Setting source sentence in amuNMT" << std::endl;
   amunmt::States firstStates = m_nmt->CalcSourceContext(sourceSentence);
+
 
   return new NeuralScoreState(firstStates);
 }
@@ -185,6 +178,10 @@ void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t ind
   if(batch.size() > 0) {
     RescoreStackBatch(batch, index);
   }
+
+  // for (auto hyp : hyps) {
+    // std::cerr << "rescored: " << *hyp << std::endl;
+  // }
 }
 
 void NeuralScoreFeature::EvaluateInIsolation(const Phrase &source
@@ -217,6 +214,7 @@ FFState* NeuralScoreFeature::EvaluateWhenApplied(
   const FFState* prev_state,
   ScoreComponentCollection* accumulator) const
 {
+
   std::vector<float> newScores(m_numScoreComponents, 0);
 
   const TargetPhrase& tp = cur_hypo.GetCurrTargetPhrase();
@@ -285,18 +283,20 @@ void NeuralScoreFeature::RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_
   for(Hypothesis* hyp : hyps) {
     size_t tpLength = hyp->GetCurrTargetPhrase().GetSize();
 
-    if(hyp->IsSourceCompleted())
+    if(hyp->IsSourceCompleted()) {
       complete = true;
+    }
 
-    if(tpLength > maxLength)
+    if(tpLength > maxLength) {
       maxLength = tpLength;
+    }
   }
 
   if (complete) {
     maxLength++;
   }
 
-  Batches batches(maxLength, Batch(hyps.size(), -1));
+  Batches batches(maxLength + 1, Batch(hyps.size(), -1));
   std::vector<amunmt::States> states(hyps.size());
   Scores probs(hyps.size(), 0.0);
   Scores unks(hyps.size(), 0.0);
@@ -314,6 +314,10 @@ void NeuralScoreFeature::RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_
     if(hyps[i]->GetId() == 0) {
       return;
     }
+    const Hypothesis* prevHyp = hyps[i]->GetPrevHypo();
+    const NeuralScoreState* nState = static_cast<const NeuralScoreState*>(prevHyp->GetFFState(index));
+
+    states[i] = nState->GetState();
   }
 
   m_nmt->BatchSteps(batches, probs, unks, states);
@@ -347,6 +351,7 @@ void NeuralScoreFeature::RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_
     hyps[i]->SetFFState(index, nState);
     delete temp;
   }
+  std::cerr << "STACK RESCORING: FINISHED" << std::endl;
 }
 
 
@@ -359,6 +364,9 @@ void NeuralScoreFeature::ProcessStack(Collector& collector, size_t index)
 
 }
 
+NeuralScoreFeature::~NeuralScoreFeature() {
+  amunmt::NMT::Clean();
+}
 
 }
 

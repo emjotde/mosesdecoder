@@ -27,6 +27,7 @@ namespace Moses {
 class NeuralScoreFeature : public StatefulFeatureFunction {
  public:
   NeuralScoreFeature(const std::string &line);
+  ~NeuralScoreFeature();
 
   bool IsUseable(const FactorMask &mask) const {
     return true;
