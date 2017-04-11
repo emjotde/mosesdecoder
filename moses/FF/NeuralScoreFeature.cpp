@@ -351,7 +351,6 @@ void NeuralScoreFeature::RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_
     hyps[i]->SetFFState(index, nState);
     delete temp;
   }
-  std::cerr << "STACK RESCORING: FINISHED" << std::endl;
 }
 
 
