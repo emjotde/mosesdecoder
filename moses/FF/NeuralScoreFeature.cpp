@@ -103,7 +103,6 @@ class NeuralScoreState : public FFState
 
 NeuralScoreFeature::NeuralScoreFeature(const std::string &line)
   : StatefulFeatureFunction(1, line),
-    m_batchSize(1000),
     m_stateLength(5),
     m_factor(0),
     m_mode("rescore"),
@@ -113,14 +112,9 @@ NeuralScoreFeature::NeuralScoreFeature(const std::string &line)
   amunmt::NMT::InitGod(m_configFilePath);
 
   size_t totalThreads = amunmt::NMT::GetTotalThreads();
+  m_batchSize = amunmt::NMT::GetBatchSize();
 
   std::cerr << "Total amuNMT threads/scorers: " << totalThreads << std::endl;
-
-  // for (size_t i = 0; i < totalThreads; ++i) {
-    // m_scorers.push_back(amunmt::NMT::NewScorers());
-  // }
-
-  std::cerr << "amuNMT loaded." << std::endl;
 }
 
 
@@ -132,6 +126,7 @@ void NeuralScoreFeature::InitializeForInput(ttasksptr const& ttask)
     size_t scorerId = m_threadId++ % m_scorers.size();
     m_nmt.reset(new amunmt::NMT());
   } else {
+    m_nmt->SetDevice();
   }
 }
 
