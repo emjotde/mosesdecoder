@@ -29,6 +29,7 @@ public:
 
   StatefulFeatureFunction(const std::string &line, bool registerNow);
   StatefulFeatureFunction(size_t numScoreComponents, const std::string &line);
+  virtual ~StatefulFeatureFunction();
 
   /**
    * \brief This interface should be implemented.

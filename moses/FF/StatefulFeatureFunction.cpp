@@ -19,5 +19,8 @@ StatefulFeatureFunction
   m_statefulFFs.push_back(this);
 }
 
+StatefulFeatureFunction
+::~StatefulFeatureFunction() {}
+
 }
 
