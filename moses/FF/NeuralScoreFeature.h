@@ -27,11 +27,13 @@ namespace Moses {
 class NeuralScoreFeature : public StatefulFeatureFunction {
  public:
   NeuralScoreFeature(const std::string &line);
-  ~NeuralScoreFeature();
+  virtual ~NeuralScoreFeature();
 
   bool IsUseable(const FactorMask &mask) const {
     return true;
   }
+
+  virtual void Load(AllOptions::ptr const& opts);
 
   void InitializeForInput(ttasksptr const& ttask);
   void CleanUpAfterSentenceProcessing(ttasksptr const& ttask);

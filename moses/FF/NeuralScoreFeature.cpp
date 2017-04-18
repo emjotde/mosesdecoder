@@ -109,6 +109,10 @@ NeuralScoreFeature::NeuralScoreFeature(const std::string &line)
     m_threadId(0)
 {
   ReadParameters();
+}
+
+void NeuralScoreFeature::Load(AllOptions::ptr const& opts) {
+  m_options = opts;
   amunmt::NMT::InitGod(m_configFilePath);
 
   size_t totalThreads = amunmt::NMT::GetTotalThreads();
@@ -116,6 +120,7 @@ NeuralScoreFeature::NeuralScoreFeature(const std::string &line)
 
   std::cerr << "Total amuNMT threads/scorers: " << totalThreads << std::endl;
 }
+
 
 
 void NeuralScoreFeature::InitializeForInput(ttasksptr const& ttask)
@@ -158,6 +163,8 @@ void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t ind
 {
   if(m_mode != "rescore")
     return;
+
+  std::cerr << "Stack size: " << hyps.size() << std::endl;
 
   std::vector<Hypothesis*> batch;
   for (size_t i = 0; i < hyps.size(); ++i) {
@@ -359,6 +366,7 @@ void NeuralScoreFeature::ProcessStack(Collector& collector, size_t index)
 }
 
 NeuralScoreFeature::~NeuralScoreFeature() {
+  std::cerr << "Neural Score desctructor" << std::endl;
   amunmt::NMT::Clean();
 }
 
