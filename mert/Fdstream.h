@@ -56,6 +56,9 @@ protected:
   }
 
   virtual ~_fdstream() {
+    if (_file_descriptor.get() != -1) {
+      _file_descriptor.release();
+    }
     delete _filebuf;
     _filebuf = NULL;
   }
