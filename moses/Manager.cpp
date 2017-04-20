@@ -1631,7 +1631,7 @@ OutputNBest(std::ostream& out, Moses::TrellisPathList const& nBestList) const
 
   const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
   const StaticData &staticData = StaticData::Instance();
-  std::map<std::string, std::vector<double> > rescorerMap;
+  std::map<std::string, std::vector<float> > rescorerMap;
 
   for (size_t i = 0; i < ffs.size(); ++i) {
     const NeuralScoreFeature* nsf = dynamic_cast<const NeuralScoreFeature*>(ffs[i]);
@@ -1659,7 +1659,7 @@ OutputNBest(std::ostream& out, Moses::TrellisPathList const& nBestList) const
     bool with_labels = options()->nbest.include_feature_labels;
     std::stringstream scoreSString;
     path.GetScoreBreakdown()->OutputAllFeatureScores(scoreSString, with_labels);
-    std::map<std::string, std::vector<double> >::iterator nmtFFNameIter;
+    std::map<std::string, std::vector<float> >::iterator nmtFFNameIter;
     std::string scoreString = scoreSString.str();
     std::string modified;
     for (nmtFFNameIter = rescorerMap.begin(); nmtFFNameIter != rescorerMap.end(); nmtFFNameIter++) {

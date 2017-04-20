@@ -128,10 +128,9 @@ void NeuralScoreFeature::InitializeForInput(ttasksptr const& ttask)
   if (!m_nmt.get()) {
     boost::mutex::scoped_lock lock(m_mutex);
     std::cerr << "NMT pointer is empty: creating nmt object" << std::endl;
-    size_t scorerId = m_threadId++ % m_scorers.size();
     m_nmt.reset(new amunmt::NMT());
   } else {
-    m_nmt->SetDevice();
+    // m_nmt->SetDevice();
   }
 }
 
@@ -158,33 +157,6 @@ const FFState* NeuralScoreFeature::EmptyHypothesisState(const InputType &input) 
   return new NeuralScoreState(firstStates);
 }
 
-
-void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t index)
-{
-  if(m_mode != "rescore")
-    return;
-
-  std::cerr << "Stack size: " << hyps.size() << std::endl;
-
-  std::vector<Hypothesis*> batch;
-  for (size_t i = 0; i < hyps.size(); ++i) {
-    if (batch.size() < m_batchSize) {
-      batch.push_back(hyps[i]);
-    } else {
-      RescoreStackBatch(batch, index);
-      batch.clear();
-      batch.push_back(hyps[i]);
-    }
-  }
-
-  if(batch.size() > 0) {
-    RescoreStackBatch(batch, index);
-  }
-
-  // for (auto hyp : hyps) {
-    // std::cerr << "rescored: " << *hyp << std::endl;
-  // }
-}
 
 void NeuralScoreFeature::EvaluateInIsolation(const Phrase &source
     , const TargetPhrase &targetPhrase
@@ -258,7 +230,7 @@ FFState* NeuralScoreFeature::EvaluateWhenApplied(
   return new NeuralScoreState(amunmt::States());
 }
 
-std::vector<double> NeuralScoreFeature::RescoreNBestList(
+std::vector<float> NeuralScoreFeature::RescoreNBestList(
     std::vector<std::string> nbestList) const
 {
   return m_nmt->RescoreNBestList(nbestList);
@@ -278,51 +250,37 @@ void NeuralScoreFeature::SetParameter(const std::string& key, const std::string&
 }
 
 
-void NeuralScoreFeature::RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_t index)
+void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t index)
 {
-  size_t maxLength = 1;
-  bool complete = false;
-  for(Hypothesis* hyp : hyps) {
-    size_t tpLength = hyp->GetCurrTargetPhrase().GetSize();
+  std::vector<std::vector<std::string>> phrases;
+  std::vector<amunmt::States> states;
+  std::vector<float> probs(hyps.size(), 0.0f);
+
+  for (auto& hyp : hyps) {
+    if (hyp->GetId() == 0) {
+        return;
+    }
+
+    std::vector<std::string> phrase;
+    const TargetPhrase& tp = hyp->GetCurrTargetPhrase();
+
+    for (size_t j = 0; j < tp.GetSize(); ++j) {
+      phrase.push_back(tp.GetWord(j).GetString(m_factor).as_string());
+    }
 
     if(hyp->IsSourceCompleted()) {
-      complete = true;
+        phrase.push_back("</s>");
     }
 
-    if(tpLength > maxLength) {
-      maxLength = tpLength;
-    }
+    phrases.emplace_back(std::move(phrase));
+
+    const NeuralScoreState* nState =
+        static_cast<const NeuralScoreState*>(hyp->GetPrevHypo()->GetFFState(index));
+
+    states.push_back(nState->GetState());
   }
 
-  if (complete) {
-    maxLength++;
-  }
-
-  Batches batches(maxLength + 1, Batch(hyps.size(), -1));
-  std::vector<amunmt::States> states(hyps.size());
-  Scores probs(hyps.size(), 0.0);
-  Scores unks(hyps.size(), 0.0);
-
-  for (size_t i = 0; i < hyps.size(); ++i) {
-    const TargetPhrase& tp = hyps[i]->GetCurrTargetPhrase();
-    for (size_t j = 0; j < tp.GetSize(); ++j) {
-      batches[j][i] = m_nmt->TargetVocab(tp.GetWord(j).GetString(m_factor).as_string());
-    }
-
-    if(complete) {
-      batches[tp.GetSize()][i] = m_nmt->TargetVocab("</s>");
-    }
-
-    if(hyps[i]->GetId() == 0) {
-      return;
-    }
-    const Hypothesis* prevHyp = hyps[i]->GetPrevHypo();
-    const NeuralScoreState* nState = static_cast<const NeuralScoreState*>(prevHyp->GetFFState(index));
-
-    states[i] = nState->GetState();
-  }
-
-  m_nmt->BatchSteps(batches, probs, unks, states);
+  m_nmt->RescorePhrases(phrases, states, probs);
 
   for (size_t i = 0; i < hyps.size(); ++i) {
     const Hypothesis* prevHyp = hyps[i]->GetPrevHypo();
@@ -341,7 +299,6 @@ void NeuralScoreFeature::RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_
 
     Scores scores(1);
     scores[0] = probs[i];
-    //scores[1] = unks[i];
 
     ScoreComponentCollection& accumulator = hyps[i]->GetCurrScoreBreakdown();
     accumulator.PlusEquals(this, scores);
@@ -366,7 +323,6 @@ void NeuralScoreFeature::ProcessStack(Collector& collector, size_t index)
 }
 
 NeuralScoreFeature::~NeuralScoreFeature() {
-  std::cerr << "Neural Score desctructor" << std::endl;
   amunmt::NMT::Clean();
 }
 

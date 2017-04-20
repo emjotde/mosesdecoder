@@ -71,7 +71,7 @@ class NeuralScoreFeature : public StatefulFeatureFunction {
 
   void SetParameter(const std::string& key, const std::string& value);
 
-  std::vector<double> RescoreNBestList(std::vector<std::string> nbestList) const;
+  std::vector<float> RescoreNBestList(std::vector<std::string> nbestList) const;
 
 
  private:
