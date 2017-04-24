@@ -208,11 +208,11 @@ void SearchCubePruning::Decode()
     }
     sourceHypoColl->PruneToSize(m_options.search.stack_size);
     ProcessStackForNeuro(sourceHypoColl);
-    
+
     VERBOSE(3,std::endl);
     sourceHypoColl->CleanupArcList();
-    
-    
+
+
     IFVERBOSE(2) {
       m_manager.GetSentenceStats().StopTimeStack();
     }
@@ -220,9 +220,9 @@ void SearchCubePruning::Decode()
     IFVERBOSE(2) {
       m_manager.GetSentenceStats().StartTimeSetupCubes();
     }
-    
+
     CreateForwardTodos(*sourceHypoColl, 0);
-  
+
     IFVERBOSE(2) {
       m_manager.GetSentenceStats().StopTimeSetupCubes();
     }
@@ -237,13 +237,18 @@ void SearchCubePruning::ProcessStackForNeuro(HypothesisStackCubePruning*& stack)
   for (h = stack->begin(); h != stack->end(); ++h) {
     temp.push_back(*h);
   }
-  
+
   const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
   const StaticData &staticData = StaticData::Instance();
   for (size_t i = 0; i < ffs.size(); ++i) {
     const NeuralScoreFeature* nsf = dynamic_cast<const NeuralScoreFeature*>(ffs[i]);
-    if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i]))
-      const_cast<NeuralScoreFeature*>(nsf)->RescoreStack(temp, i);
+    if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i])) {
+      auto neuroHyps = const_cast<NeuralScoreFeature*>(nsf)->RescoreStack(temp, i);
+
+      for (auto& prop : neuroHyps) {
+        std::cerr << prop << std::endl;
+      }
+    }
   }
 }
 
@@ -267,13 +272,13 @@ void SearchCubePruning::CreateForwardTodos(HypothesisStackCubePruning &stack, Fu
 
     // Sort the hypotheses inside the Bitmap Container as they are being used by now.
     bitmapContainer.SortHypotheses();
-    
+
     // check bitamp and range doesn't overlap
     size_t startPos, endPos;
     for (startPos = 0 ; startPos < size ; startPos++) {
       if (bitmap.GetValue(startPos))
         continue;
-      
+
       // not yet covered
       Range applyRange(startPos, startPos);
       if (CheckDistortion(bitmap, applyRange)) {

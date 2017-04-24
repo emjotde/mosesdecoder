@@ -12,7 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/tss.hpp>
 
-#include "common/scorer.h"
+#include "plugin/nmt.h"
 
 typedef std::vector<std::string> Prefix;
 
@@ -38,7 +38,7 @@ class NeuralScoreFeature : public StatefulFeatureFunction {
   void InitializeForInput(ttasksptr const& ttask);
   void CleanUpAfterSentenceProcessing(ttasksptr const& ttask);
 
-  void RescoreStack(std::vector<Hypothesis*>& hyps, size_t index);
+  std::vector<amunmt::NeuralExtention> RescoreStack(std::vector<Hypothesis*>& hyps, size_t index);
   void RescoreStackBatch(std::vector<Hypothesis*>& hyps, size_t index);
   void ProcessStack(Collector& collector, size_t index);
 

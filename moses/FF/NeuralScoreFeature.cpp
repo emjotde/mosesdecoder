@@ -250,7 +250,7 @@ void NeuralScoreFeature::SetParameter(const std::string& key, const std::string&
 }
 
 
-void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t index)
+std::vector<amunmt::NeuralExtention> NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t index)
 {
   std::vector<std::vector<std::string>> phrases;
   std::vector<amunmt::States> states;
@@ -258,7 +258,7 @@ void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t ind
 
   for (auto& hyp : hyps) {
     if (hyp->GetId() == 0) {
-        return;
+        return std::vector<amunmt::NeuralExtention>();
     }
 
     std::vector<std::string> phrase;
@@ -281,6 +281,7 @@ void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t ind
   }
 
   m_nmt->RescorePhrases(phrases, states, probs);
+  auto newHyps = m_nmt->ExtendHyps(states);
 
   for (size_t i = 0; i < hyps.size(); ++i) {
     const Hypothesis* prevHyp = hyps[i]->GetPrevHypo();
@@ -310,6 +311,7 @@ void NeuralScoreFeature::RescoreStack(std::vector<Hypothesis*>& hyps, size_t ind
     hyps[i]->SetFFState(index, nState);
     delete temp;
   }
+  return newHyps;
 }
 
 
