@@ -102,16 +102,6 @@ SearchCubePruning::~SearchCubePruning()
   CleanAfterDecode();
 }
 
-// void SearchCubePruning::CacheForNeural(Collector& collector) {
-  // const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
-  // const StaticData &staticData = StaticData::Instance();
-  // for (size_t i = 0; i < ffs.size(); ++i) {
-    // const NeuralScoreFeature* nsf = dynamic_cast<const NeuralScoreFeature*>(ffs[i]);
-    // if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i]))
-      // const_cast<NeuralScoreFeature*>(nsf)->ProcessStack(collector, i);
-  // }
-// }
-
 /**
  * Main decoder loop that translates a sentence by expanding
  * hypotheses stack by stack, until the end of the sentence.
@@ -264,36 +254,34 @@ NeuroPhraseColl SearchCubePruning::ProcessStackForNeuro(HypothesisStackCubePruni
     if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i])) {
       auto neuroHyps = const_cast<NeuralScoreFeature*>(nsf)->RescoreStack(hypsToRescore, i);
 
-      for (auto& prop : neuroHyps) {
-        std::cerr << prop << std::endl;
+      // for (auto& prop : neuroHyps) {
+        // Hypothesis* prevHyp = hypsToRescore[prop.prevIndex_];
 
-        Hypothesis* prevHyp = hypsToRescore[prop.prevIndex_];
+        // if(prevHyp->IsSourceCompleted()) break;
 
-        if(prevHyp->IsSourceCompleted()) break;
+        // if (prop.coverage_.empty()) continue;
 
-        if (prop.coverage_.empty()) continue;
+        // std::stringstream ss;
+        // ss << prop.phrase_[0];
+        // for (size_t wi = 1; wi < prop.phrase_.size(); ++wi) {
+          // ss << " " << prop.phrase_[wi];
+        // }
 
-        std::stringstream ss;
-        ss << prop.phrase_[0];
-        for (size_t wi = 1; wi < prop.phrase_.size(); ++wi) {
-          ss << " " << prop.phrase_[wi];
-        }
+        // Range range (prop.coverage_.front(), prop.coverage_.back());
+        // if (prevHyp->GetWordsBitmap().Overlap(range)) {
+          // continue;
+        // }
 
-        Range range (prop.coverage_.front(), prop.coverage_.back());
-        if (prevHyp->GetWordsBitmap().Overlap(range)) {
-          continue;
-        }
+        // const Phrase& sourcePhrase = m_inputPathsMap[range]->GetPhrase();
+        // TargetPhrase* targetPhrase = m_pt->CreateNeuralTargetPhrase(sourcePhrase, ss.str(),
+                                                                    // prop.score_);
+        // auto& bitMap = m_bitmaps.GetBitmap(prevHyp->GetWordsBitmap(), range);
 
-        const Phrase& sourcePhrase = m_inputPathsMap[range]->GetPhrase();
-        TargetPhrase* targetPhrase = m_pt->CreateNeuralTargetPhrase(sourcePhrase, ss.str(),
-                                                                    prop.score_);
-        auto& bitMap = m_bitmaps.GetBitmap(prevHyp->GetWordsBitmap(), range);
-
-        TranslationOption* tOptions = new TranslationOption(range, *targetPhrase);
-        m_dynamicOptions.push_back(tOptions);
-        tOptions->SetInputPath(*m_inputPathsMap[range]);
-        neuroTranslationOptions[&bitMap].push_back(tOptions);
-      }
+        // TranslationOption* tOptions = new TranslationOption(range, *targetPhrase);
+        // m_dynamicOptions.push_back(tOptions);
+        // tOptions->SetInputPath(*m_inputPathsMap[range]);
+        // neuroTranslationOptions[&bitMap].push_back(tOptions);
+      // }
     }
   }
   return neuroTranslationOptions;

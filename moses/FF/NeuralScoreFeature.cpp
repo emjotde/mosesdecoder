@@ -281,36 +281,37 @@ std::vector<amunmt::NeuralExtention> NeuralScoreFeature::RescoreStack(std::vecto
   }
 
   m_nmt->RescorePhrases(phrases, states, probs);
-  auto newHyps = m_nmt->ExtendHyps(states);
+  // auto newHyps = m_nmt->ExtendHyps(states);
 
-  for (size_t i = 0; i < hyps.size(); ++i) {
-    const Hypothesis* prevHyp = hyps[i]->GetPrevHypo();
-    const NeuralScoreState* prevState =
-         static_cast<const NeuralScoreState*>(prevHyp->GetFFState(index));
+  // for (size_t i = 0; i < hyps.size(); ++i) {
+    // const Hypothesis* prevHyp = hyps[i]->GetPrevHypo();
+    // const NeuralScoreState* prevState =
+         // static_cast<const NeuralScoreState*>(prevHyp->GetFFState(index));
 
-    const TargetPhrase& tp = hyps[i]->GetCurrTargetPhrase();
-    std::vector<std::string> phrase;
-    for(size_t j = 0; j < tp.GetSize(); ++j) {
-      phrase.push_back(tp.GetWord(j).GetString(m_factor).as_string());
-    }
+    // const TargetPhrase& tp = hyps[i]->GetCurrTargetPhrase();
+    // std::vector<std::string> phrase;
+    // for(size_t j = 0; j < tp.GetSize(); ++j) {
+      // phrase.push_back(tp.GetWord(j).GetString(m_factor).as_string());
+    // }
 
-    NeuralScoreState* nState = new NeuralScoreState(states[i],
-                                                    prevState->GetContext(),
-                                                    phrase);
+    // NeuralScoreState* nState = new NeuralScoreState(states[i],
+                                                    // prevState->GetContext(),
+                                                    // phrase);
 
-    Scores scores(1);
-    scores[0] = probs[i];
+    // Scores scores(1);
+    // scores[0] = probs[i];
 
-    ScoreComponentCollection& accumulator = hyps[i]->GetCurrScoreBreakdown();
-    accumulator.PlusEquals(this, scores);
-    hyps[i]->Recalc();
+    // ScoreComponentCollection& accumulator = hyps[i]->GetCurrScoreBreakdown();
+    // accumulator.PlusEquals(this, scores);
+    // hyps[i]->Recalc();
 
-    const NeuralScoreState* temp =
-        static_cast<const NeuralScoreState*>(hyps[i]->GetFFState(index));
+    // const NeuralScoreState* temp =
+        // static_cast<const NeuralScoreState*>(hyps[i]->GetFFState(index));
 
-    hyps[i]->SetFFState(index, nState);
-    delete temp;
-  }
+    // hyps[i]->SetFFState(index, nState);
+    // delete temp;
+  // }
+  std::vector<amunmt::NeuralExtention> newHyps;
   return newHyps;
 }
 
