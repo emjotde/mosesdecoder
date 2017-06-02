@@ -28,6 +28,8 @@ public:
 
   TO_STRING();
 
+  TargetPhrase* CreateNeuralTargetPhrase(const Phrase& sPhrase, const std::string& phrase, float cost) const;
+
 
 protected:
   TargetPhrase *CreateTargetPhrase(const Phrase &sourcePhrase) const;

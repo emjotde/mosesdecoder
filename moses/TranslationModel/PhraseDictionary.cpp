@@ -244,5 +244,24 @@ bool PhraseDictionary::SatisfyBackoff(const InputPath &inputPath) const
   return true;
 }
 
+TargetPhrase* PhraseDictionary::CreateNeuralTargetPhrase(const Phrase& sPhrase, const std::string& phrase, float cost) const {
+  assert(sourcePhrase.GetSize());
+
+  // string str = sourcePhrase.GetWord(0).GetFactor(0)->GetString().as_string();
+  // str = "SkeletonPT:" + str;
+
+  TargetPhrase *tp = new TargetPhrase(phrase, this);
+  tp->SetAlignmentInfo("0-0");
+
+  // score for this phrase table
+  vector<float> scores(m_numScoreComponents, cost);
+  tp->GetScoreBreakdown().PlusEquals(this, scores);
+
+  // score of all other ff when this rule is being loaded
+  tp->EvaluateInIsolation(sPhrase);
+
+  return tp;
+
+}
 } // namespace
 

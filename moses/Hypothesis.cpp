@@ -162,18 +162,22 @@ EvaluateWhenApplied(float estimatedScore)
   // cached in the translation option
   const vector<const StatelessFeatureFunction*>& sfs =
     StatelessFeatureFunction::GetStatelessFeatureFunctions();
+
   for (unsigned i = 0; i < sfs.size(); ++i) {
     const StatelessFeatureFunction &ff = *sfs[i];
     if(!staticData.IsFeatureFunctionIgnored(ff)) {
+      // std::cerr <<  ff.GetScoreProducerDescription() << std::endl;
       ff.EvaluateWhenApplied(*this, &m_currScoreBreakdown);
     }
   }
 
+  // std::cerr << " stateful:\n";
   const vector<const StatefulFeatureFunction*>& ffs =
     StatefulFeatureFunction::GetStatefulFeatureFunctions();
   for (unsigned i = 0; i < ffs.size(); ++i) {
     const StatefulFeatureFunction &ff = *ffs[i];
     if(!staticData.IsFeatureFunctionIgnored(ff)) {
+      // std::cerr <<  ff.GetScoreProducerDescription() << std::endl;
       FFState const* s = m_prevHypo ? m_prevHypo->m_ffStates[i] : NULL;
       m_ffStates[i] = ff.EvaluateWhenApplied(*this, s, &m_currScoreBreakdown);
     }

@@ -242,6 +242,9 @@ public:
     UTIL_THROW_IF2(scores.size() != sp->GetNumScoreComponents(),
                    "Number of scores is incorrect");
     size_t offset = sp->GetIndex();
+    // std::cerr << "offset : " << offset 
+              // << " m_scorer size: " << m_scores.size()
+              // << " scores size: " << scores.size() << std::endl;
     for (size_t i = 0; i < scores.size(); ++i) {
       m_scores[i + offset] += scores[i];
     }

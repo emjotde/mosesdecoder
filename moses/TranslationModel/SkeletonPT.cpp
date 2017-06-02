@@ -84,4 +84,27 @@ ostream& operator<<(ostream& out, const SkeletonPT& phraseDict)
   return out;
 }
 
+TargetPhrase* SkeletonPT::CreateNeuralTargetPhrase(const Phrase& sPhrase, const std::string& phrase, float cost) const {
+  assert(sourcePhrase.GetSize());
+
+  // string str = sourcePhrase.GetWord(0).GetFactor(0)->GetString().as_string();
+  // str = "SkeletonPT:" + str;
+
+  std::cerr << "CREATE TP" << std::endl;
+  TargetPhrase *tp = new TargetPhrase(phrase, this);
+  std::cerr << "AFTER\n";
+
+  // score for this phrase table
+  vector<float> scores(m_numScoreComponents, cost);
+  std::cerr << "score braekdown" << std::endl;
+  tp->GetScoreBreakdown().PlusEquals(this, scores);
+
+  // score of all other ff when this rule is being loaded
+  std::cerr << "avaluate in isolation" << std::endl;
+  tp->EvaluateInIsolation(sPhrase, GetFeaturesToApply());
+
+  return tp;
+
+}
+
 }

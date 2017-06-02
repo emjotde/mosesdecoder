@@ -6,6 +6,7 @@
 #include "TranslationOptionCollection.h"
 #include <boost/foreach.hpp>
 #include "FF/NeuralScoreFeature.h"
+#include "moses/TranslationModel/SkeletonPT.h"
 
 using namespace std;
 
@@ -13,7 +14,8 @@ namespace Moses
 {
 class BitmapContainerOrderer
 {
-public:
+  public:
+
   bool operator()(const BitmapContainer* A, const BitmapContainer* B) const {
     if (B->Empty()) {
       if (A->Empty()) {
@@ -86,22 +88,29 @@ SearchCubePruning(Manager& manager, TranslationOptionCollection const& transOptC
 
     m_hypoStackColl[ind] = sourceHypoColl;
   }
+
+  for (auto path : m_transOptColl.GetInputPaths()) {
+    m_inputPathsMap[path->GetWordsRange()] = path;
+  }
+
+
 }
 
 SearchCubePruning::~SearchCubePruning()
 {
   RemoveAllInColl(m_hypoStackColl);
+  CleanAfterDecode();
 }
 
-void SearchCubePruning::CacheForNeural(Collector& collector) {
-  const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
-  const StaticData &staticData = StaticData::Instance();
-  for (size_t i = 0; i < ffs.size(); ++i) {
-    const NeuralScoreFeature* nsf = dynamic_cast<const NeuralScoreFeature*>(ffs[i]);
-    if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i]))
-      const_cast<NeuralScoreFeature*>(nsf)->ProcessStack(collector, i);
-  }
-}
+// void SearchCubePruning::CacheForNeural(Collector& collector) {
+  // const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
+  // const StaticData &staticData = StaticData::Instance();
+  // for (size_t i = 0; i < ffs.size(); ++i) {
+    // const NeuralScoreFeature* nsf = dynamic_cast<const NeuralScoreFeature*>(ffs[i]);
+    // if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i]))
+      // const_cast<NeuralScoreFeature*>(nsf)->ProcessStack(collector, i);
+  // }
+// }
 
 /**
  * Main decoder loop that translates a sentence by expanding
@@ -109,6 +118,14 @@ void SearchCubePruning::CacheForNeural(Collector& collector) {
  */
 void SearchCubePruning::Decode()
 {
+  const std::vector<FeatureFunction*> &ffs = FeatureFunction::GetFeatureFunctions();
+  for (auto& ff : ffs) {
+    PhraseDictionary* pt = dynamic_cast<PhraseDictionary*>(ff);
+    if (pt != nullptr) {
+      m_pt = pt;
+      break;
+    }
+  }
   // initial seed hypothesis: nothing translated, no words produced
   const Bitmap &initBitmap = m_bitmaps.GetInitialBitmap();
   Hypothesis *hypo = new Hypothesis(m_manager, m_source, m_initialTransOpt, initBitmap, m_manager.GetNextHypoId());
@@ -118,8 +135,8 @@ void SearchCubePruning::Decode()
   firstStack.AddInitial(hypo);
   // Call this here because the loop below starts at the second stack.
   firstStack.CleanupArcList();
-  
-  CreateForwardTodos(firstStack, 0);
+
+  CreateForwardTodos(firstStack);
 
   const size_t PopLimit = m_manager.options()->cube.pop_limit;
   VERBOSE(2,"Cube Pruning pop limit is " << PopLimit << std::endl);
@@ -136,8 +153,8 @@ void SearchCubePruning::Decode()
     // BOOST_FOREACH(HypothesisStack* hstack, m_hypoStackColl) {
     if (this->out_of_time()) return;
 
-    HypothesisStackCubePruning* sourceHypoColl
-    = static_cast<HypothesisStackCubePruning*>(*iterStack);
+    HypothesisStackCubePruning* sourceHypoColl =
+      static_cast<HypothesisStackCubePruning*>(*iterStack);
 
     // priority queue which has a single entry for each bitmap
     // container, sorted by score of top hyp
@@ -207,7 +224,7 @@ void SearchCubePruning::Decode()
       m_manager.GetSentenceStats().StartTimeStack();
     }
     sourceHypoColl->PruneToSize(m_options.search.stack_size);
-    ProcessStackForNeuro(sourceHypoColl);
+    auto neuroTranslationOptions = ProcessStackForNeuro(sourceHypoColl);
 
     VERBOSE(3,std::endl);
     sourceHypoColl->CleanupArcList();
@@ -221,7 +238,7 @@ void SearchCubePruning::Decode()
       m_manager.GetSentenceStats().StartTimeSetupCubes();
     }
 
-    CreateForwardTodos(*sourceHypoColl, 0);
+    CreateForwardTodos(*sourceHypoColl, &neuroTranslationOptions);
 
     IFVERBOSE(2) {
       m_manager.GetSentenceStats().StopTimeSetupCubes();
@@ -231,39 +248,68 @@ void SearchCubePruning::Decode()
   }
 }
 
-void SearchCubePruning::ProcessStackForNeuro(HypothesisStackCubePruning*& stack) {
+NeuroPhraseColl SearchCubePruning::ProcessStackForNeuro(HypothesisStackCubePruning*& stack) {
   HypothesisStackCubePruning::iterator h;
-  std::vector<Hypothesis*> temp;
+  std::vector<Hypothesis*> hypsToRescore;
   for (h = stack->begin(); h != stack->end(); ++h) {
-    temp.push_back(*h);
+    hypsToRescore.push_back(*h);
   }
 
-  const std::vector<const StatefulFeatureFunction*> &ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
+  const auto& ffs = StatefulFeatureFunction::GetStatefulFeatureFunctions();
   const StaticData &staticData = StaticData::Instance();
+
+  NeuroPhraseColl neuroTranslationOptions;
   for (size_t i = 0; i < ffs.size(); ++i) {
     const NeuralScoreFeature* nsf = dynamic_cast<const NeuralScoreFeature*>(ffs[i]);
     if (nsf && !staticData.IsFeatureFunctionIgnored(*ffs[i])) {
-      auto neuroHyps = const_cast<NeuralScoreFeature*>(nsf)->RescoreStack(temp, i);
+      auto neuroHyps = const_cast<NeuralScoreFeature*>(nsf)->RescoreStack(hypsToRescore, i);
 
       for (auto& prop : neuroHyps) {
         std::cerr << prop << std::endl;
+
+        Hypothesis* prevHyp = hypsToRescore[prop.prevIndex_];
+
+        if(prevHyp->IsSourceCompleted()) break;
+
+        if (prop.coverage_.empty()) continue;
+
+        std::stringstream ss;
+        ss << prop.phrase_[0];
+        for (size_t wi = 1; wi < prop.phrase_.size(); ++wi) {
+          ss << " " << prop.phrase_[wi];
+        }
+
+        Range range (prop.coverage_.front(), prop.coverage_.back());
+        if (prevHyp->GetWordsBitmap().Overlap(range)) {
+          continue;
+        }
+
+        const Phrase& sourcePhrase = m_inputPathsMap[range]->GetPhrase();
+        TargetPhrase* targetPhrase = m_pt->CreateNeuralTargetPhrase(sourcePhrase, ss.str(),
+                                                                    prop.score_);
+        auto& bitMap = m_bitmaps.GetBitmap(prevHyp->GetWordsBitmap(), range);
+
+        TranslationOption* tOptions = new TranslationOption(range, *targetPhrase);
+        m_dynamicOptions.push_back(tOptions);
+        tOptions->SetInputPath(*m_inputPathsMap[range]);
+        neuroTranslationOptions[&bitMap].push_back(tOptions);
       }
     }
   }
+  return neuroTranslationOptions;
 }
 
 
-void SearchCubePruning::CreateForwardTodos(HypothesisStackCubePruning &stack, FunctorCube* functor)
+void SearchCubePruning::CreateForwardTodos(HypothesisStackCubePruning &stack, NeuroPhraseColl* neuro)
 {
   const _BMType &bitmapAccessor = stack.GetBitmapAccessor();
-  _BMType::const_iterator iterAccessor;
   size_t size = m_source.GetSize();
 
   stack.AddHypothesesToBitmapContainers();
 
-  for (iterAccessor = bitmapAccessor.begin() ; iterAccessor != bitmapAccessor.end() ; ++iterAccessor) {
-    const Bitmap &bitmap = *iterAccessor->first;
-    BitmapContainer &bitmapContainer = *iterAccessor->second;
+  for (auto& iterAccessor : bitmapAccessor) {
+    const Bitmap& bitmap = *iterAccessor.first;
+    BitmapContainer &bitmapContainer = *iterAccessor.second;
 
     if (bitmapContainer.GetHypothesesSize() == 0) {
       // no hypothese to expand. don't bother doing it
@@ -276,21 +322,19 @@ void SearchCubePruning::CreateForwardTodos(HypothesisStackCubePruning &stack, Fu
     // check bitamp and range doesn't overlap
     size_t startPos, endPos;
     for (startPos = 0 ; startPos < size ; startPos++) {
-      if (bitmap.GetValue(startPos))
+      if (bitmap.GetValue(startPos)) {
         continue;
+      }
 
       // not yet covered
       Range applyRange(startPos, startPos);
       if (CheckDistortion(bitmap, applyRange)) {
-        // apply range
-        //{
-        //  CollectorCube collector(this);
-        //  collector(bitmap, applyRange, bitmapContainer);
-        //  CacheForNeural(collector);
-        //}
-        {
-          ExpanderCube expander(this);
-          expander(bitmap, applyRange, bitmapContainer);
+        const Bitmap &newBitmap = m_bitmaps.GetBitmap(bitmap, applyRange);
+        if (neuro) {
+          auto& neuroPhrases = (*neuro)[&newBitmap];
+          CreateForwardTodos(newBitmap, applyRange, bitmapContainer, neuroPhrases);
+        } else {
+          CreateForwardTodos(newBitmap, applyRange, bitmapContainer);
         }
       }
 
@@ -298,20 +342,18 @@ void SearchCubePruning::CreateForwardTodos(HypothesisStackCubePruning &stack, Fu
       size_t maxSizePhrase = m_manager.options()->search.max_phrase_length;
       maxSize = std::min(maxSize, maxSizePhrase);
       for (endPos = startPos+1; endPos < startPos + maxSize; endPos++) {
-        if (bitmap.GetValue(endPos))
+        if (bitmap.GetValue(endPos)) {
           break;
+        }
 
         Range applyRange(startPos, endPos);
         if (CheckDistortion(bitmap, applyRange)) {
-          // apply range
-          //{
-          //  CollectorCube collector(this);
-          //  collector(bitmap, applyRange, bitmapContainer);
-          //  CacheForNeural(collector);
-          //}
-          {
-            ExpanderCube expander(this);
-            expander(bitmap, applyRange, bitmapContainer);
+          const Bitmap &newBitmap = m_bitmaps.GetBitmap(bitmap, applyRange);
+          if (neuro) {
+            auto& neuroPhrases = (*neuro)[&newBitmap];
+            CreateForwardTodos(newBitmap, applyRange, bitmapContainer, neuroPhrases);
+          } else {
+            CreateForwardTodos(newBitmap, applyRange, bitmapContainer);
           }
         }
       }
@@ -321,19 +363,52 @@ void SearchCubePruning::CreateForwardTodos(HypothesisStackCubePruning &stack, Fu
 
 void
 SearchCubePruning::
-CreateForwardTodos(Bitmap const& bitmap, Range const& range,
-                   BitmapContainer& bitmapContainer)
+CreateForwardTodos(Bitmap const& newBitmap, Range const& range,
+                   BitmapContainer& bitmapContainer,
+                   const std::vector<TranslationOption*>& neuroPhrases)
 {
-  const Bitmap &newBitmap = m_bitmaps.GetBitmap(bitmap, range);
 
   size_t numCovered = newBitmap.GetNumWordsCovered();
-  const TranslationOptionList* transOptList;
-  transOptList = m_transOptColl.GetTranslationOptionList(range);
-  const SquareMatrix &estimatedScores = m_transOptColl.GetEstimatedScores();
+  const auto* transOptList = m_transOptColl.GetTranslationOptionList(range);
+  TranslationOptionList* extendedTransOptList = new TranslationOptionList();
+  m_transOptionLists.push_back(extendedTransOptList);
 
-  if (transOptList && transOptList->size() > 0) {    
-    HypothesisStackCubePruning& newStack
-    = *static_cast<HypothesisStackCubePruning*>(m_hypoStackColl[numCovered]);
+  for (auto& option : *transOptList) {
+    extendedTransOptList->Add(option);
+  }
+
+  for(auto& option : neuroPhrases) {
+    extendedTransOptList->Add(option);
+  }
+  static TranslationOption::Better cmp;
+  std::sort(extendedTransOptList->begin(), extendedTransOptList->end(), cmp);
+  const SquareMatrix& estimatedScores = m_transOptColl.GetEstimatedScores();
+
+  if (transOptList && transOptList->size() > 0) {
+    HypothesisStackCubePruning& newStack =
+      *static_cast<HypothesisStackCubePruning*>(m_hypoStackColl[numCovered]);
+
+    newStack.SetBitmapAccessor(newBitmap, newStack, range, bitmapContainer,
+                               estimatedScores, *extendedTransOptList);
+  }
+}
+
+void
+SearchCubePruning::
+CreateForwardTodos(Bitmap const& newBitmap, Range const& range,
+                   BitmapContainer& bitmapContainer)
+{
+  // const Bitmap &newBitmap = m_bitmaps.GetBitmap(bitmap, range);
+
+  size_t numCovered = newBitmap.GetNumWordsCovered();
+  // const TranslationOptionList* transOptList;
+  const auto* transOptList = m_transOptColl.GetTranslationOptionList(range);
+  const SquareMatrix& estimatedScores = m_transOptColl.GetEstimatedScores();
+
+  if (transOptList && transOptList->size() > 0) {
+    HypothesisStackCubePruning& newStack =
+      *static_cast<HypothesisStackCubePruning*>(m_hypoStackColl[numCovered]);
+
     newStack.SetBitmapAccessor(newBitmap, newStack, range, bitmapContainer,
                                estimatedScores, *transOptList);
   }
@@ -438,6 +513,28 @@ void SearchCubePruning::OutputHypoStack(int stack)
 const std::vector < HypothesisStack* >& SearchCubePruning::GetHypothesisStacks() const
 {
   return m_hypoStackColl;
+}
+
+void SearchCubePruning::CleanAfterDecode() {
+  for (auto option : m_dynamicOptions) {
+    if (option) {
+      delete option;
+    }
+  }
+  m_dynamicOptions.clear();
+
+  for (auto list : m_transOptionLists) {
+    if (list) {
+      list->resize(0);
+      delete list;
+    }
+  }
+  // for (auto option : m_transOptionLists) {
+    // if (option) {
+      // delete option;
+    // }
+  // }
+  // m_transOptionLists.clear();
 }
 
 }

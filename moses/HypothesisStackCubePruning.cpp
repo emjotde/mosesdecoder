@@ -83,6 +83,7 @@ pair<HypothesisStackCubePruning::iterator, bool> HypothesisStackCubePruning::Add
 
 bool HypothesisStackCubePruning::AddPrune(Hypothesis *hypo)
 {
+  // std::cerr << "Adding  addPruno hypo " << hypo << std::endl;
   if (hypo->GetFutureScore() == - std::numeric_limits<float>::infinity()) {
     m_manager.GetSentenceStats().AddDiscarded();
     VERBOSE(3,"discarded, constraint" << std::endl);
@@ -90,6 +91,7 @@ bool HypothesisStackCubePruning::AddPrune(Hypothesis *hypo)
     return false;
   }
 
+  // std::cerr << "Adding  addPruno hypo " << hypo << std::endl;
   if (hypo->GetFutureScore() < m_worstScore) {
     // too bad for stack. don't bother adding hypo into collection
     m_manager.GetSentenceStats().AddDiscarded();
@@ -98,6 +100,7 @@ bool HypothesisStackCubePruning::AddPrune(Hypothesis *hypo)
     return false;
   }
 
+  // std::cerr << "Adding  addPruno hypo " << hypo << std::endl;
   // over threshold, try to add to collection
   std::pair<iterator, bool> addRet = Add(hypo);
   if (addRet.second) {
@@ -105,11 +108,13 @@ bool HypothesisStackCubePruning::AddPrune(Hypothesis *hypo)
     return true;
   }
 
+  // std::cerr << "Adding  addPruno hypo " << hypo << std::endl;
   // equiv hypo exists, recombine with other hypo
   iterator &iterExisting = addRet.first;
   assert(iterExisting != m_hypos.end());
   Hypothesis *hypoExisting = *iterExisting;
 
+  // std::cerr << "Adding  addPruno hypo " << hypo << std::endl;
   m_manager.GetSentenceStats().AddRecombination(*hypo, **iterExisting);
 
   // found existing hypo with same target ending.

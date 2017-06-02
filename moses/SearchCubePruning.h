@@ -8,9 +8,12 @@
 
 namespace Moses
 {
+using NeuroPhraseColl = std::map<const Bitmap*, std::vector<TranslationOption*>>;
 
 class InputType;
 class TranslationOptionCollection;
+
+class SkeletonPT;
 
 class SearchCubePruning;
 
@@ -68,19 +71,29 @@ class SearchCubePruning: public Search
 protected:
   friend ExpanderCube;
   friend CollectorCube;
+  std::map<Range, InputPath*> m_inputPathsMap;
+  const PhraseDictionary* m_pt;
+  std::vector<TranslationOption*> m_dynamicOptions;
+  std::vector<TranslationOptionList*> m_transOptionLists;
 
   std::vector < HypothesisStack* > m_hypoStackColl; /**< stacks to store hypotheses (partial translations) */
   // no of elements = no of words in source + 1
   const TranslationOptionCollection &m_transOptColl; /**< pre-computed list of translation options for the phrases in this sentence */
 
   //! go thru all bitmaps in 1 stack & create backpointers to bitmaps in the stack
-  void CreateForwardTodos(HypothesisStackCubePruning &stack, FunctorCube* functor);
+  void CreateForwardTodos(HypothesisStackCubePruning &stack, NeuroPhraseColl* neuro=nullptr);
+
   //! create a back pointer to this bitmap, with edge that has this words range translation
-  void CreateForwardTodos(const Bitmap &bitmap, const Range &range, BitmapContainer &bitmapContainer);
+  void CreateForwardTodos(const Bitmap &bitmap, const Range &range,
+                          BitmapContainer &bitmapContainer);
 
-  void CacheForNeural(Collector& collector);
+  void CreateForwardTodos(Bitmap const& newBitmap, Range const& range,
+                          BitmapContainer& bitmapContainer,
+                          const std::vector<TranslationOption*>& neuroPhrases);
 
-  void ProcessStackForNeuro(HypothesisStackCubePruning*& stack);
+  std::vector<Hypothesis*> CacheForNeural(Collector& collector);
+
+  NeuroPhraseColl ProcessStackForNeuro(HypothesisStackCubePruning*& stack);
 
 
   //void CreateForwardTodos2(HypothesisStackCubePruning &stack);
@@ -90,6 +103,8 @@ protected:
   bool CheckDistortion(const Bitmap &bitmap, const Range &range) const;
 
   void PrintBitmapContainerGraph();
+
+  void CleanAfterDecode();
 
 public:
   SearchCubePruning(Manager& manager, const TranslationOptionCollection &transOptColl);

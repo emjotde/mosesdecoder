@@ -153,6 +153,8 @@ public:
   TargetPhraseCollectionWithSourcePhrase::shared_ptr
   GetTargetPhraseCollectionLEGACY(InputType const& src,Range const& range) const;
 
+  TargetPhrase* CreateNeuralTargetPhrase(const Phrase& sPhrase, const std::string& phrase, float cost) const;
+
 protected:
   static std::vector<PhraseDictionary*> s_staticColl;
 
